@@ -6,7 +6,7 @@ on:
 
 jobs:
   tests:
-    name: tests
+    name: Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -16,5 +16,5 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.25.1"
-      - name: golang version
+      - name: go test
         run: go test ./...
