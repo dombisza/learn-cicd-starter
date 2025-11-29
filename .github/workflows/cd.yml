@@ -15,3 +15,12 @@ jobs:
           go-version: "1.25.1"
       - name: Build binary
         run: ./scripts/buildprod.sh
+      - name: AUTH up GCP
+        uses: "google-github-actions/auth@v2"
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}'
+      - name: Set up GCP
+        uses: "google-github-actions/setup-gcloud@v3"
+      - name: Push to AR
+        run: |
+          gcloud builds submit --tag "${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT }}/${{ vars.GCP_REPO }}/${{ vars.GCP_IMG }}:latest" .
