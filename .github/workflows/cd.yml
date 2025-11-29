@@ -1,26 +1,44 @@
 on:
   push:
     branches: [main]
+
 jobs:
-  tests:
+  deploy:
     name: Deploy
     runs-on: ubuntu-latest
+
+    env:
+      IMAGE_URL: "${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT }}/${{ vars.GCP_REPO }}/${{ vars.GCP_IMG }}:latest"
 
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: "1.25.1"
+
       - name: Build binary
         run: ./scripts/buildprod.sh
-      - name: AUTH up GCP
-        uses: "google-github-actions/auth@v2"
+
+      - name: Auth to GCP
+        uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
-      - name: Set up GCP
-        uses: "google-github-actions/setup-gcloud@v3"
-      - name: Push to AR
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Push to Artifact Registry
         run: |
-          gcloud builds submit --tag "${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT }}/${{ vars.GCP_REPO }}/${{ vars.GCP_IMG }}:latest" .
+          gcloud builds submit --tag "${IMAGE_URL}" .
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy notely \
+            --image "${IMAGE_URL}" \
+            --region "${{ vars.GCP_REGION }}" \
+            --allow-unauthenticated \
+            --project "${{ vars.GCP_PROJECT }}" \
+            --max-instances=4
